@@ -2,10 +2,10 @@
 import os
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,16 +16,15 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "change-me")
 JWT_ALGORITHM = "HS256"
 TOKEN_TTL_HOURS = 24 * 30  # 30 days — personal app, infrequent re-login
 
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def hash_pin(pin: str) -> str:
-    return _pwd.hash(pin)
+    return bcrypt.hashpw(pin.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_pin(pin: str, pin_hash: str) -> bool:
-    return _pwd.verify(pin, pin_hash)
+    return bcrypt.checkpw(pin.encode(), pin_hash.encode())
 
 
 def create_token(user_id: int) -> str:
